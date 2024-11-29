@@ -1,3 +1,5 @@
+# Modified from https://github.com/karpathy/nanoGPT by @karpathy
+
 """
 Full definition of a GPT Language Model, all of it in this single file.
 References:
