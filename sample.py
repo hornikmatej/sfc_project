@@ -250,6 +250,54 @@ def generate_visualization():
 
     st.plotly_chart(plot_gelu(), use_container_width=False)
 
+    st.markdown("## 4. Token Generation")
+
+    # Get vocab size from model
+    vocab_size = model.config.vocab_size
+
+    st.latex(r"\text{logits} = W_{\text{lm}} \cdot x")
+    st.latex(r"\text{logits} \in \mathbb{R}^{(" + str(vocab_size) + r")}")
+
+    # Add temperature slider
+    temperature = st.slider(
+        "Temperature", min_value=0.01, max_value=1.5, value=0.7, step=0.001
+    )
+
+    # Get probabilities for token generation
+    logits = logits[:, -1, :] / temperature
+    probs = torch.nn.functional.softmax(logits, dim=-1)
+
+    # Get top 20 tokens and their probabilities
+    top_probs, top_indices = torch.topk(probs[0], k=10)
+
+    # Create dataframe for visualization
+    token_data = {
+        "Token": [tokenizer.decode([idx.item()]) for idx in top_indices],
+        "Probability": [prob.item() * 100 for prob in top_probs],  # Scale by 100
+    }
+
+    event_token = st.dataframe(
+        token_data,
+        column_config={
+            "Token": "Token",
+            "Probability": st.column_config.ProgressColumn(
+                "Probability",
+                min_value=0,
+                max_value=100,
+                format="%.1f%%",
+            ),
+        },
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="single-row",
+    )
+
+    if event_token and len(event_token.selection["rows"]) > 0:
+        st.session_state.input_text += token_data["Token"][
+            event_token.selection["rows"][0]
+        ]
+        return st.rerun
+
     return
 
 
@@ -259,9 +307,13 @@ tokenizer = get_init_tokenizer()
 
 # Sidebar configuration
 st.sidebar.title("🤖 GPT-2 Token Generation")
+if hasattr(st.session_state, "input_text") is False:
+    st.session_state.input_text = "Hey Elon. How is Tesla"
 st.session_state.input_text = st.sidebar.text_input(
-    "Enter your prompt:", "The universe number is", key="prompt_input"
+    "Enter your prompt:", st.session_state.input_text, key="prompt_input"
 )
 generate_button = st.sidebar.button("Generate", key="generate_button")
 
-generate_visualization()
+out = generate_visualization()
+if out:
+    out()
