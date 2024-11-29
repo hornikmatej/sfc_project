@@ -53,10 +53,6 @@ class CausalSelfAttention(nn.Module):
         self.n_head = config.n_head
         self.n_embd = config.n_embd
         self.dropout = config.dropout
-        # flash attention make GPU go brrrrr but support is only in PyTorch >= 2.0
-        # self.flash = hasattr(torch.nn.functional, "scaled_dot_product_attention")
-        # if not self.flash:
-        print("WARNING: using slow attention. Flash Attention requires PyTorch >= 2.0")
         # causal mask to ensure that attention is only applied to the left in the input sequence
         self.register_buffer(
             "bias",
@@ -82,17 +78,6 @@ class CausalSelfAttention(nn.Module):
             1, 2
         )  # (B, nh, T, hs)
 
-        # # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
-        # if self.flash:
-        #     # efficient attention using Flash Attention CUDA kernels
-        #     y = torch.nn.functional.scaled_dot_product_attention(
-        #         q,
-        #         k,
-        #         v,
-        #         attn_mask=None,
-        #         dropout_p=self.dropout if self.training else 0,
-        #         is_causal=True,
-        #     )
         # manual implementation of attention
         att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
         att = att.masked_fill(self.bias[:, :, :T, :T] == 0, float("-inf"))
@@ -162,9 +147,7 @@ class GPT(nn.Module):
             )
         )
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        self.transformer.wte.weight = (
-            self.lm_head.weight
-        )  # https://paperswithcode.com/method/weight-tying
+        self.transformer.wte.weight = self.lm_head.weight
 
         # init all weights
         self.apply(self._init_weights)
@@ -181,9 +164,6 @@ class GPT(nn.Module):
     def get_num_params(self, non_embedding=True):
         """
         Return the number of parameters in the model.
-        For non-embedding count (default), the position embeddings get subtracted.
-        The token embeddings would too, except due to the parameter sharing these
-        params are actually used as weights in the final layer, so we include them.
         """
         n_params = sum(p.numel() for p in self.parameters())
         if non_embedding:
