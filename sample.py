@@ -307,6 +307,19 @@ tokenizer = get_init_tokenizer()
 
 # Sidebar configuration
 st.sidebar.title("🤖 GPT-2 Token Generation")
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Model Configuration")
+st.sidebar.markdown(
+    f"""
+- **Vocabulary Size**: {model.config.vocab_size:,} tokens
+- **Context Length**: {model.config.block_size} tokens  
+- **Embedding Size**: {model.config.n_embd} dimensions
+- **Attention Heads**: {model.config.n_head}
+- **Transformer Layers**: {model.config.n_layer}
+- **Total Parameters**: {(sum(p.numel() for p in model.parameters())/1e6):.1f}M
+"""
+)
+st.sidebar.markdown("---")
 if hasattr(st.session_state, "input_text") is False:
     st.session_state.input_text = "Hey Elon. How is Tesla"
 st.session_state.input_text = st.sidebar.text_input(
