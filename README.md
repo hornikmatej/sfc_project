@@ -26,8 +26,8 @@ Make sure you have Poetry installed on your system.
 ### Setup Steps
 1. **Clone the Repository**:
     ```bash
-    git clone <repository_url>
-    cd <repository_name>
+    git clone https://github.com/hornikmatej/sfc_project
+    cd sfc_project
     ```
 
 2. **Install Dependencies**:

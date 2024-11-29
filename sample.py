@@ -7,7 +7,6 @@ from contextlib import nullcontext
 import torch
 import tiktoken
 from model import GPT, GPTConfig
-import plotly.graph_objs as go
 
 from helpers import (
     create_token_visualization,
@@ -226,6 +225,7 @@ def generate_visualization():
                 x = x + tmp
                 x = x + block.mlp(block.ln_2(x))
             x = model.transformer.ln_f(x)
+            logits = model.lm_head(x[:, [-1], :])
     attn_M = attn_M.squeeze(0)
     fig = visualize_attention_matrices(attn_M, tokens)
     st.plotly_chart(fig, use_container_width=False)
@@ -249,6 +249,7 @@ def generate_visualization():
     st.latex(r"\text{MLP}(x) = W_{\text{proj}} \cdot h + b_{\text{proj}}")
 
     st.plotly_chart(plot_gelu(), use_container_width=False)
+
     return
 
 
